@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMC GIS Dashboard - Karvir Region</title>
+    <title>SMC GIS Dashboard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Leaflet Draw Plugin -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* Modern Scrollbar */
@@ -23,69 +18,106 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* Map Controls & Custom Popups */
-        .leaflet-container { font-family: inherit; }
-        
-        /* Custom Toggle Switch */
-        .toggle-checkbox:checked { right: 0; border-color: #2563eb; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #2563eb; }
+        .leaflet-container { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        /* Custom Leaflet Popup Box styling matching exact screenshot */
+        .leaflet-popup-content-wrapper {
+            padding: 0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.18), 0 4px 12px -2px rgba(0, 0, 0, 0.08) !important;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            width: 280px !important;
+        }
+        .leaflet-popup-content {
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        .leaflet-popup-tip {
+            background: #ffffff;
+        }
+        .leaflet-container a.leaflet-popup-close-button {
+            top: 10px !important;
+            right: 12px !important;
+            color: #94a3b8 !important;
+            font-size: 16px !important;
+            font-weight: normal;
+        }
+        .leaflet-container a.leaflet-popup-close-button:hover {
+            color: #334155 !important;
+        }
+
+        /* Leaflet Control Position Tweaks */
+        .leaflet-top.leaflet-left {
+            top: 12px;
+            left: 12px;
+        }
+        .leaflet-bar {
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+        .leaflet-bar a {
+            border-bottom: 1px solid #f1f5f9 !important;
+            color: #334155 !important;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen overflow-hidden flex flex-col font-sans select-none">
 
-    <!-- TOP HEADER NAVBAR (Image 1 Style) -->
-    <header class="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-30 shrink-0 shadow-sm">
-        <!-- Title -->
+    <!-- TOP HEADER NAVBAR -->
+    <header class="h-14 bg-white border-b border-slate-200 px-5 flex items-center justify-between z-30 shrink-0 shadow-xs">
+        <!-- Dashboard Title -->
         <div class="flex items-center space-x-3">
-            <h1 class="text-xl font-bold text-blue-600 tracking-tight">SMC GIS Dashboard</h1>
-            <span class="text-xs bg-blue-50 text-blue-700 font-semibold px-2.5 py-0.5 rounded-full border border-blue-200">Karvir Tehsil</span>
+            <h1 class="text-xl font-extrabold text-blue-600 tracking-tight">SMC GIS Dashboard</h1>
         </div>
 
-        <!-- Top Right Badges (Image 1 Feature Counter Badges) -->
-        <div class="flex items-center space-x-2 text-xs font-medium">
-            <div class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full border border-slate-300 transition cursor-pointer">
-                <span class="font-bold text-blue-600">26</span> Wards
+        <!-- Top Right Badges (Exact pills from screenshot) -->
+        <div class="flex items-center space-x-3 text-xs font-medium text-slate-600">
+            <div class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-full border border-slate-200 transition cursor-pointer shadow-xs">
+                <span class="font-bold text-slate-800">26</span> Wards
             </div>
-            <div class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full border border-slate-300 transition cursor-pointer">
-                <span class="font-bold text-blue-600">39</span> Health Centers
+            <div class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-full border border-slate-200 transition cursor-pointer shadow-xs">
+                <span class="font-bold text-slate-800">39</span> Health Units
             </div>
-            <div class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full border border-slate-300 transition cursor-pointer">
-                <span class="font-bold text-emerald-600">1,482</span> Total POIs
+            <div class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-full border border-slate-200 transition cursor-pointer shadow-xs">
+                <span class="font-bold text-slate-800">176</span> Schools
             </div>
-            
-            <button id="btn-analytics-modal" title="Analytics" class="ml-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition shadow-sm">
-                <i class="fa-solid fa-chart-pie"></i>
-            </button>
+            <div class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-full border border-slate-200 transition cursor-pointer shadow-xs hidden md:block">
+                <span class="font-bold text-slate-800">1,240</span> Buildings
+            </div>
         </div>
     </header>
 
-    <!-- MAIN DASHBOARD CONTAINER -->
+    <!-- MAIN CONTAINER -->
     <div class="flex-1 flex relative overflow-hidden">
 
-        <!-- LEFT SIDEBAR: LAYER CATALOG (Image 1 Style) -->
-        <aside id="sidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col z-20 shrink-0 shadow-md">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">LAYER CATALOG</h2>
-                <span class="text-xs text-blue-600 font-semibold">Layers</span>
+        <!-- LEFT SIDEBAR: LAYER CATALOG -->
+        <aside id="sidebar" class="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shrink-0 shadow-sm">
+            <div class="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">LAYER CATALOG</h2>
+                <a href="#" class="text-xs text-blue-600 font-semibold hover:underline">Layers</a>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            <div class="flex-1 overflow-y-auto px-4 py-3 space-y-5">
                 <!-- BASE MAPS SECTION -->
                 <div>
-                    <h3 class="text-xs font-bold uppercase text-blue-600 tracking-wider mb-3">BASE MAPS</h3>
-                    <div class="space-y-3 text-xs font-medium text-slate-700">
+                    <h3 class="text-[11px] font-bold uppercase text-blue-600 tracking-wider mb-2.5">BASE MAPS</h3>
+                    <div class="space-y-3 text-xs font-semibold text-slate-700">
                         <div class="flex items-center justify-between">
                             <span>Google Satellite</span>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="base-chk-sat" checked onchange="switchBasemap('satellite')" class="sr-only peer">
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                <input type="checkbox" id="base-sat" checked onchange="switchBasemap('satellite')" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span>Google Terrain / Road</span>
+                            <span>Google Terrain</span>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="base-chk-road" onchange="switchBasemap('osm')" class="sr-only peer">
-                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                <input type="checkbox" id="base-terrain" onchange="switchBasemap('terrain')" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
                     </div>
@@ -95,16 +127,16 @@
 
                 <!-- MAP LAYERS SECTION -->
                 <div>
-                    <h3 class="text-xs font-bold uppercase text-blue-600 tracking-wider mb-3">MAP LAYERS</h3>
-                    <div class="space-y-3.5 text-xs font-medium text-slate-700">
+                    <h3 class="text-[11px] font-bold uppercase text-blue-600 tracking-wider mb-2.5">MAP LAYERS</h3>
+                    <div class="space-y-3 text-xs font-medium text-slate-700">
                         <!-- Buildings -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
-                                <span class="w-3.5 h-3.5 bg-slate-500 rounded-sm inline-block"></span>
-                                <span>Buildings</span>
+                                <span class="w-3.5 h-3.5 bg-emerald-700 rounded-xs inline-block"></span>
+                                <span class="font-semibold text-slate-700">Buildings</span>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="chk-sidebar-building" checked onchange="toggleLayer('building', this.checked)" class="sr-only peer">
+                                <input type="checkbox" id="chk-building" checked onchange="toggleLayer('building', this.checked)" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
@@ -112,11 +144,11 @@
                         <!-- Landuse -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
-                                <span class="w-3.5 h-3.5 bg-emerald-500 rounded-sm inline-block"></span>
-                                <span>Landuse</span>
+                                <span class="w-3.5 h-3.5 bg-lime-500 rounded-xs inline-block"></span>
+                                <span class="font-semibold text-slate-700">Landuse</span>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="chk-sidebar-landuse" checked onchange="toggleLayer('landuse', this.checked)" class="sr-only peer">
+                                <input type="checkbox" id="chk-landuse" checked onchange="toggleLayer('landuse', this.checked)" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
@@ -124,23 +156,35 @@
                         <!-- Places -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
-                                <span class="w-3.5 h-3.5 bg-amber-600 rounded-full inline-block"></span>
-                                <span>Places</span>
+                                <span class="w-3.5 h-3.5 bg-stone-500 rounded-full inline-block border border-stone-600"></span>
+                                <span class="font-semibold text-slate-700">Places</span>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="chk-sidebar-places" checked onchange="toggleLayer('places', this.checked)" class="sr-only peer">
+                                <input type="checkbox" id="chk-places" checked onchange="toggleLayer('places', this.checked)" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
 
-                        <!-- POIs -->
+                        <!-- pois -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
                                 <span class="w-3.5 h-3.5 bg-pink-500 rounded-full inline-block"></span>
-                                <span>POIs</span>
+                                <span class="font-semibold text-slate-700">pois</span>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="chk-sidebar-pois" checked onchange="toggleLayer('pois', this.checked)" class="sr-only peer">
+                                <input type="checkbox" id="chk-pois" checked onchange="toggleLayer('pois', this.checked)" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Pois_1 -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2.5">
+                                <span class="w-3.5 h-3.5 bg-orange-500 rounded-xs inline-block"></span>
+                                <span class="font-semibold text-slate-700">Pois_1</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="chk-pois1" checked onchange="toggleLayer('pois1', this.checked)" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
@@ -148,11 +192,11 @@
                         <!-- Railways -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
-                                <span class="w-4 h-0.5 bg-rose-700 inline-block"></span>
-                                <span>Railways</span>
+                                <span class="w-4 h-0.5 bg-rose-800 inline-block"></span>
+                                <span class="font-semibold text-slate-700">Railways</span>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="chk-sidebar-railway" checked onchange="toggleLayer('railway', this.checked)" class="sr-only peer">
+                                <input type="checkbox" id="chk-railway" checked onchange="toggleLayer('railway', this.checked)" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
@@ -160,11 +204,35 @@
                         <!-- Roads -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
-                                <span class="w-4 h-0.5 bg-amber-400 inline-block"></span>
-                                <span>Roads</span>
+                                <span class="w-4 h-0.5 bg-slate-600 inline-block"></span>
+                                <span class="font-semibold text-slate-700">Roads</span>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="chk-sidebar-roads" checked onchange="toggleLayer('roads', this.checked)" class="sr-only peer">
+                                <input type="checkbox" id="chk-roads" checked onchange="toggleLayer('roads', this.checked)" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Trafic -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2.5">
+                                <span class="w-3.5 h-3.5 bg-emerald-500 rounded-full inline-block"></span>
+                                <span class="font-semibold text-slate-700">Trafic</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="chk-traffic" checked onchange="toggleLayer('traffic', this.checked)" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Transport -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2.5">
+                                <span class="w-3.5 h-3.5 bg-amber-200 border border-amber-400 rounded-xs inline-block"></span>
+                                <span class="font-semibold text-slate-700">Transport</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="chk-transport" checked onchange="toggleLayer('transport', this.checked)" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
@@ -172,11 +240,11 @@
                         <!-- Water -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
-                                <span class="w-3.5 h-3.5 bg-orange-600 rounded-sm inline-block"></span>
-                                <span>Water</span>
+                                <span class="w-3.5 h-3.5 bg-pink-600 rounded-xs inline-block"></span>
+                                <span class="font-semibold text-slate-700">Water</span>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="chk-sidebar-water" checked onchange="toggleLayer('water', this.checked)" class="sr-only peer">
+                                <input type="checkbox" id="chk-water" checked onchange="toggleLayer('water', this.checked)" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
@@ -185,138 +253,71 @@
             </div>
         </aside>
 
-        <!-- CENTER MAP CANVAS CONTAINER -->
+        <!-- MAP CANVAS -->
         <main class="flex-1 relative h-full">
             <div id="map" class="w-full h-full"></div>
-
-            <!-- TOP-RIGHT LAYER LEGEND CONTROL BOX (Image 2 Style) -->
-            <div class="absolute top-4 right-4 bg-white/95 backdrop-blur-md p-3 rounded-lg border border-slate-300 shadow-lg z-30 text-xs w-56">
-                <div class="space-y-2 font-medium text-slate-700">
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-water" checked onchange="toggleLayer('water', this.checked)" class="rounded text-blue-600 focus:ring-0">
-                        <span class="w-3 h-3 bg-orange-600 inline-block rounded-xs"></span>
-                        <span>water</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-roads" checked onchange="toggleLayer('roads', this.checked)" class="rounded text-blue-600 focus:ring-0">
-                        <span class="w-3 h-0.5 bg-amber-400 inline-block"></span>
-                        <span>roads</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-railway" checked onchange="toggleLayer('railway', this.checked)" class="rounded text-blue-600 focus:ring-0">
-                        <span class="w-3 h-0.5 bg-purple-600 inline-block"></span>
-                        <span>Railway</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-landuse" checked onchange="toggleLayer('landuse', this.checked)" class="rounded text-blue-600 focus:ring-0">
-                        <span class="w-3 h-3 bg-emerald-600 inline-block rounded-xs"></span>
-                        <span>landuse</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-contour" checked onchange="toggleLayer('contour', this.checked)" class="rounded text-blue-600 focus:ring-0">
-                        <span class="w-3 h-0.5 bg-amber-700 inline-block"></span>
-                        <span>contour</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-building" checked onchange="toggleLayer('building', this.checked)" class="rounded text-blue-600 focus:ring-0">
-                        <span class="w-3 h-3 bg-slate-600 inline-block rounded-xs"></span>
-                        <span>building</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-karvir" checked onchange="toggleLayer('karvir', this.checked)" class="rounded text-blue-600 focus:ring-0">
-                        <span class="w-3 h-3 bg-red-600 inline-block rounded-xs"></span>
-                        <span>karvir_clip — clipped</span>
-                    </label>
-                    <hr class="my-1 border-slate-200" />
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-googleroad" onchange="switchBasemap('osm')" class="rounded text-blue-600 focus:ring-0">
-                        <span>Google Road</span>
-                    </label>
-                    <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
-                        <input type="checkbox" id="legend-googlesat" checked onchange="switchBasemap('satellite')" class="rounded text-blue-600 focus:ring-0">
-                        <span>Google Satellite</span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- ATTRIBUTE INSPECTOR POPUP CARD -->
-            <div id="inspector-card" class="hidden absolute bottom-6 left-6 w-80 bg-white/95 backdrop-blur-md border border-slate-300 rounded-xl shadow-2xl z-30 overflow-hidden">
-                <div class="bg-blue-600 px-4 py-2.5 text-white flex justify-between items-center">
-                    <h3 class="text-xs font-bold uppercase tracking-wider" id="inspector-title">Feature Attributes</h3>
-                    <button onclick="closeInspector()" class="text-white hover:text-slate-200">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-                <div class="p-3 max-h-60 overflow-y-auto space-y-1.5 text-xs" id="inspector-body"></div>
-            </div>
         </main>
     </div>
 
-    <!-- ANALYTICS MODAL -->
-    <div id="analytics-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col">
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-base">Karvir Spatial Distribution</h3>
-                <button onclick="closeAnalyticsModal()" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div class="h-64 relative">
-                    <canvas id="landuseChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const KARVIR_CENTER = [16.6978, 74.2243];
+        const KARVIR_CENTER = [16.6850, 74.2200];
         const DEFAULT_ZOOM = 12;
 
-        let map, selectedFeatureLayer = null;
+        let map;
         let mapLayers = {};
         let basemapLayers = {};
 
-        // Synthetic Data representing Image 2 layers
-        const geojson_karvir = {
-            "type": "FeatureCollection",
-            "features": [{
-                "type": "Feature",
-                "properties": { "name": "Karvir Region", "district": "Kolhapur", "area_sqkm": 678.4 },
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[74.1500, 16.6300], [74.2900, 16.6300], [74.3100, 16.7600], [74.1600, 16.7600], [74.1500, 16.6300]]]
-                }
-            }]
+        // Feature Data
+        const bilewadiFeature = {
+            "type": "Feature",
+            "properties": {
+                "osm_id": "10103582706",
+                "code": "1004",
+                "fclass": "hamlet",
+                "population": "0",
+                "name": "Bilewadi"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [74.2700, 16.7150]
+            }
         };
 
-        const geojson_landuse = {
-            "type": "FeatureCollection",
-            "features": [
-                { "type": "Feature", "properties": { "type": "Agriculture", "area_ha": 450 }, "geometry": { "type": "Polygon", "coordinates": [[[74.1700, 16.6500], [74.2200, 16.6500], [74.2100, 16.6900], [74.1600, 16.6800], [74.1700, 16.6500]]] } },
-                { "type": "Feature", "properties": { "type": "Urban Core", "area_ha": 310 }, "geometry": { "type": "Polygon", "coordinates": [[[74.2100, 16.6800], [74.2600, 16.6800], [74.2500, 16.7200], [74.2000, 16.7100], [74.2100, 16.6800]]] } }
-            ]
+        const karvirZonePolygon = {
+            "type": "Feature",
+            "properties": {
+                "name": "SMC Karvir Region"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [74.2400, 16.7050],
+                        [74.2800, 16.7200],
+                        [74.2880, 16.7000],
+                        [74.2850, 16.6800],
+                        [74.2700, 16.6600],
+                        [74.2750, 16.6400],
+                        [74.2600, 16.6400],
+                        [74.2620, 16.6700],
+                        [74.2400, 16.6800],
+                        [74.2100, 16.6850],
+                        [74.2000, 16.6900],
+                        [74.2400, 16.7050]
+                    ]
+                ]
+            }
         };
 
-        const geojson_water = {
+        const poiPoints = {
             "type": "FeatureCollection",
             "features": [
-                { "type": "Feature", "properties": { "name": "Panchganga River Channel" }, "geometry": { "type": "Polygon", "coordinates": [[[74.1600, 16.7150], [74.2100, 16.7100], [74.2500, 16.7250], [74.2800, 16.7200], [74.2800, 16.7280], [74.2400, 16.7320], [74.2000, 16.7180], [74.1600, 16.7220], [74.1600, 16.7150]]] } }
-            ]
-        };
-
-        const geojson_roads = {
-            "type": "FeatureCollection",
-            "features": [
-                { "type": "Feature", "properties": { "name": "NH-48 Arterial" }, "geometry": { "type": "LineString", "coordinates": [[74.2300, 16.6300], [74.2350, 16.6800], [74.2400, 16.7300], [74.2450, 16.7600]] } }
-            ]
-        };
-
-        const geojson_pois = {
-            "type": "FeatureCollection",
-            "features": [
-                { "type": "Feature", "properties": { "name": "Mahalaxmi Temple Zone" }, "geometry": { "type": "Point", "coordinates": [74.2230, 16.6980] } },
-                { "type": "Feature", "properties": { "name": "Rankala Lake Promenade" }, "geometry": { "type": "Point", "coordinates": [74.2060, 16.6920] } }
+                bilewadiFeature,
+                { "type": "Feature", "properties": { "name": "Point 1", "osm_id": "10103582707", "code": "1005", "fclass": "village", "population": "1200" }, "geometry": { "type": "Point", "coordinates": [74.2750, 16.7080] } },
+                { "type": "Feature", "properties": { "name": "Point 2", "osm_id": "10103582708", "code": "1006", "fclass": "suburb", "population": "3400" }, "geometry": { "type": "Point", "coordinates": [74.2680, 16.6950] } },
+                { "type": "Feature", "properties": { "name": "Point 3", "osm_id": "10103582709", "code": "1007", "fclass": "hamlet", "population": "450" }, "geometry": { "type": "Point", "coordinates": [74.2720, 16.6750] } },
+                { "type": "Feature", "properties": { "name": "Point 4", "osm_id": "10103582710", "code": "1008", "fclass": "hamlet", "population": "300" }, "geometry": { "type": "Point", "coordinates": [74.2780, 16.6600] } },
+                { "type": "Feature", "properties": { "name": "Point 5", "osm_id": "10103582711", "code": "1009", "fclass": "hamlet", "population": "150" }, "geometry": { "type": "Point", "coordinates": [74.2600, 16.6800] } }
             ]
         };
 
@@ -325,81 +326,116 @@
         };
 
         function initMap() {
-            map = L.map('map', { center: KARVIR_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true });
+            map = L.map('map', { 
+                center: KARVIR_CENTER, 
+                zoom: DEFAULT_ZOOM, 
+                zoomControl: true 
+            });
 
-            basemapLayers['satellite'] = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri Satellite', maxZoom: 18 }).addTo(map);
-            basemapLayers['osm'] = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'OpenStreetMap', maxZoom: 19 });
-
-            // Render Layers with Image 2 palette
-            mapLayers['karvir'] = L.geoJSON(geojson_karvir, { style: { color: '#dc2626', weight: 2.5, fillColor: '#ef4444', fillOpacity: 0.55 }, onEachFeature: attachEvents }).addTo(map);
-            mapLayers['landuse'] = L.geoJSON(geojson_landuse, { style: { color: '#16a34a', weight: 1.5, fillColor: '#22c55e', fillOpacity: 0.5 }, onEachFeature: attachEvents }).addTo(map);
-            mapLayers['water'] = L.geoJSON(geojson_water, { style: { color: '#ea580c', weight: 1.5, fillColor: '#ea580c', fillOpacity: 0.8 }, onEachFeature: attachEvents }).addTo(map);
-            mapLayers['roads'] = L.geoJSON(geojson_roads, { style: { color: '#f59e0b', weight: 3 }, onEachFeature: attachEvents }).addTo(map);
-            mapLayers['pois'] = L.geoJSON(geojson_pois, {
-                pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 6, fillColor: '#ec4899', color: '#be185d', weight: 1, opacity: 1, fillOpacity: 0.9 }),
-                onEachFeature: attachEvents
+            // Basemaps
+            basemapLayers['satellite'] = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Esri Satellite',
+                maxZoom: 18
             }).addTo(map);
-        }
 
-        function attachEvents(feature, layer) {
-            layer.on('click', (e) => {
-                L.DomEvent.stopPropagation(e);
-                const body = document.getElementById('inspector-body');
-                const title = document.getElementById('inspector-title');
-                title.innerText = feature.properties.name || "Feature Properties";
-                let html = '';
-                for (const [k, v] of Object.entries(feature.properties)) {
-                    html += `<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500 font-medium">${k}:</span><span class="font-bold text-slate-800">${v}</span></div>`;
+            basemapLayers['terrain'] = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'OpenStreetMap',
+                maxZoom: 19
+            });
+
+            // Main Pink Polygon Zone (Matching Screenshot)
+            mapLayers['karvir_zone'] = L.geoJSON(karvirZonePolygon, {
+                style: {
+                    color: '#c026d3',
+                    weight: 1.8,
+                    fillColor: '#ec4899',
+                    fillOpacity: 0.65
                 }
-                body.innerHTML = html;
-                document.getElementById('inspector-card').classList.remove('hidden');
+            }).addTo(map);
+
+            // POIs / Places Layer with custom popup exactly as in screenshot
+            mapLayers['pois'] = L.geoJSON(poiPoints, {
+                pointToLayer: function(feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: 5,
+                        fillColor: '#ec4899',
+                        color: '#701a75',
+                        weight: 1.5,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    });
+                },
+                onEachFeature: function(feature, layer) {
+                    layer.bindPopup(buildExactPopupHTML(feature.properties), {
+                        maxWidth: 280,
+                        className: 'custom-exact-popup'
+                    });
+                }
+            }).addTo(map);
+
+            // Auto-open Bilewadi Popup on load to match reference image exactly
+            mapLayers['pois'].eachLayer(function(layer) {
+                if (layer.feature && layer.feature.properties && layer.feature.properties.name === "Bilewadi") {
+                    setTimeout(() => {
+                        layer.openPopup();
+                    }, 400);
+                }
             });
         }
 
-        function closeInspector() {
-            document.getElementById('inspector-card').classList.add('hidden');
+        // Generate Exact Popup HTML Structure matching screenshot
+        function buildExactPopupHTML(props) {
+            return `
+                <div class="p-4 bg-white">
+                    <!-- Top Pill Category Badge -->
+                    <div class="inline-block bg-blue-50 text-blue-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-blue-100 tracking-wide uppercase mb-2">
+                        PLACE • SMC ZONE
+                    </div>
+
+                    <!-- Title -->
+                    <h3 class="text-lg font-bold text-slate-900 leading-tight mb-3">
+                        ${props.name || 'Feature Attribute'}
+                    </h3>
+
+                    <!-- Key Value Properties Table -->
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between items-center py-0.5 border-b border-slate-100">
+                            <span class="text-slate-500 font-medium">osm_id</span>
+                            <span class="font-bold text-slate-800 tracking-tight">${props.osm_id || '10103582706'}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-0.5 border-b border-slate-100">
+                            <span class="text-slate-500 font-medium">code</span>
+                            <span class="font-bold text-slate-800">${props.code || '1004'}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-0.5 border-b border-slate-100">
+                            <span class="text-slate-500 font-medium">fclass</span>
+                            <span class="font-bold text-slate-800">${props.fclass || 'hamlet'}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-0.5 border-b border-slate-100">
+                            <span class="text-slate-500 font-medium">population</span>
+                            <span class="font-bold text-slate-800">${props.population !== undefined ? props.population : '0'}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-0.5">
+                            <span class="text-slate-500 font-medium">name</span>
+                            <span class="font-bold text-slate-800">${props.name || 'Bilewadi'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         function toggleLayer(layerKey, isChecked) {
             if (mapLayers[layerKey]) {
                 isChecked ? map.addLayer(mapLayers[layerKey]) : map.removeLayer(mapLayers[layerKey]);
             }
-            // Sync toggles across UI controls
-            ['chk-sidebar-', 'legend-'].forEach(prefix => {
-                const el = document.getElementById(prefix + layerKey);
-                if (el) el.checked = isChecked;
-            });
         }
 
         function switchBasemap(key) {
             for (let b in basemapLayers) map.removeLayer(basemapLayers[b]);
             map.addLayer(basemapLayers[key]);
             
-            document.getElementById('base-chk-sat').checked = (key === 'satellite');
-            document.getElementById('base-chk-road').checked = (key === 'osm');
-            document.getElementById('legend-googlesat').checked = (key === 'satellite');
-            document.getElementById('legend-googleroad').checked = (key === 'osm');
-        }
-
-        document.getElementById('btn-analytics-modal').addEventListener('click', () => {
-            document.getElementById('analytics-modal').classList.remove('hidden');
-            setTimeout(renderChart, 100);
-        });
-
-        function closeAnalyticsModal() {
-            document.getElementById('analytics-modal').classList.add('hidden');
-        }
-
-        function renderChart() {
-            const ctx = document.getElementById('landuseChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Agriculture', 'Urban Core', 'Water Bodies', 'Road Network'],
-                    datasets: [{ label: 'Area / Length', data: [450, 310, 180, 142], backgroundColor: ['#22c55e', '#ef4444', '#ea580c', '#f59e0b'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            document.getElementById('base-sat').checked = (key === 'satellite');
+            document.getElementById('base-terrain').checked = (key === 'terrain');
         }
     </script>
 </body>
