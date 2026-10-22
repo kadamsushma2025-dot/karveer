@@ -1,65 +1,1164 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <link rel="stylesheet" href="./resources/ol.css">
-        <link rel="stylesheet" href="resources/fontawesome-all.min.css">
-        <link href="resources/photon-geocoder-autocomplete.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
-        <link rel="stylesheet" href="./resources/qgis2web.css">
-        <style>
-        html, body {
-            background-color: #ffffff;
-        }
-        .ol-control > * {
-            background-color: #f8f8f8!important;
-            color: #444444!important;
-            border-radius: 0px;
-        }
-        .ol-attribution a, .gcd-gl-input::placeholder, .search-layer-input-search::placeholder {
-            color: #444444!important;
-        }
-        .search-layer-input-search {
-            background-color: #f8f8f8!important;
-        }
-        .ol-control > *:focus, .ol-control >*:hover {
-            background-color: rgba(248, 248, 248, 0.7)!important;
-        } 
-        .ol-control {
-            background-color: rgba(255,255,255,.4) !important;
-            padding: 2px !important;
-        } 
-        </style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karvir Spatial Analytics & Web-GIS Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Draw Plugin for Measurement -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Spatial Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        <style>
-        #map {
-            width: 932px;
-            height: 665px;
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        darkbg: '#0f172a',
+                        glass: 'rgba(30, 41, 59, 0.75)',
+                        glassBorder: 'rgba(255, 255, 255, 0.12)'
+                    }
+                }
+            }
         }
-        </style>
-        <title></title>
-    </head>
-    <body>
-        <div id="map">
-            <div id="popup" class="ol-popup">
-                <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-                <div id="popup-content"></div>
+    </script>
+
+    <style>
+        /* Custom UI Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Map Leaflet Custom Controls styling */
+        .leaflet-container {
+            background-color: #090d16 !important;
+            font-family: inherit;
+        }
+        .leaflet-bar {
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+        .leaflet-bar a {
+            background-color: rgba(15, 23, 42, 0.9) !important;
+            color: #e2e8f0 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s;
+        }
+        .leaflet-bar a:hover {
+            background-color: #0284c7 !important;
+            color: #ffffff !important;
+        }
+
+        /* Leaflet Tooltip & Popup custom styling */
+        .leaflet-popup-content-wrapper {
+            background: rgba(15, 23, 42, 0.95) !important;
+            color: #f1f5f9 !important;
+            border: 1px solid rgba(56, 189, 248, 0.3) !important;
+            border-radius: 12px !important;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+        }
+        .leaflet-popup-tip {
+            background: rgba(15, 23, 42, 0.95) !important;
+        }
+
+        /* Pulse Animations for status badge */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        .animate-pulse-slow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen overflow-hidden flex flex-col font-sans select-none">
+
+    <!-- TOP HEADER NAVBAR -->
+    <header class="h-16 glass-panel border-b border-slate-800 px-4 flex items-center justify-between z-30 shrink-0">
+        <!-- Title & Regional Identification -->
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-sky-500 to-indigo-600 p-2.5 rounded-xl shadow-lg shadow-sky-500/20 text-white">
+                <i class="fa-solid me-0 fa-layer-group text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-lg font-bold tracking-wide bg-gradient-to-r from-white via-slate-200 to-sky-400 bg-clip-text text-transparent">
+                        Karvir Spatial Analytics
+                    </h1>
+                    <span class="text-xs bg-sky-950 text-sky-400 border border-sky-800/60 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GIS Engine v2.4
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400">Kolhapur District, Maharashtra • 16.6978° N, 74.2243° E</p>
             </div>
         </div>
-        <script src="resources/qgis2web_expressions.js"></script>
-        <script src="./resources/functions.js"></script>
-        <script src="./resources/ol.js"></script>
-        <script src="./resources/ol-layerswitcher.js"></script>
-        <script src="resources/photon-geocoder-autocomplete.min.js"></script>
-        <script src="resources/olms.js"></script>
-        <script src="layers/karvir_clipclipped_2.js"></script><script src="layers/building_3.js"></script><script src="layers/contour_4.js"></script><script src="layers/landuse_5.js"></script><script src="layers/Railway_6.js"></script><script src="layers/roads_7.js"></script><script src="layers/water_8.js"></script>
-        <script src="styles/karvir_clipclipped_2_style.js"></script><script src="styles/building_3_style.js"></script><script src="styles/contour_4_style.js"></script><script src="styles/landuse_5_style.js"></script><script src="styles/Railway_6_style.js"></script><script src="styles/roads_7_style.js"></script><script src="styles/water_8_style.js"></script>
-        <script src="./layers/layers.js" type="text/javascript"></script> 
-        <script src="./resources/Autolinker.min.js"></script>
-        <script src="./resources/qgis2web.js"></script>
-    </body>
+
+        <!-- Dynamic KPI Stats Summary Bar (Desktop) -->
+        <div class="hidden xl:flex items-center space-x-6 text-xs bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-xl">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-shapes text-sky-400"></i>
+                <span class="text-slate-400">Total Features:</span>
+                <span id="kpi-total-features" class="font-bold text-white">1,482</span>
+            </div>
+            <div class="w-px h-4 bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-layer-group text-emerald-400"></i>
+                <span class="text-slate-400">Layers Loaded:</span>
+                <span class="font-bold text-white">7 Active</span>
+            </div>
+            <div class="w-px h-4 bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-mountain text-amber-400"></i>
+                <span class="text-slate-400">Elevation Range:</span>
+                <span class="font-bold text-amber-300">540m - 620m</span>
+            </div>
+            <div class="w-px h-4 bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-draw-polygon text-indigo-400"></i>
+                <span class="text-slate-400">Study Area:</span>
+                <span class="font-bold text-slate-200">678 km²</span>
+            </div>
+        </div>
+
+        <!-- Global Search Bar & Action Buttons -->
+        <div class="flex items-center space-x-3">
+            <!-- Feature Search Container -->
+            <div class="relative w-48 sm:w-64">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="global-search-input" placeholder="Search features or locations..." 
+                    class="w-full bg-slate-900/90 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-all">
+                <div id="search-results-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-h-60 overflow-y-auto z-50"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <button id="btn-analytics-modal" title="View Spatial Analytics Modal" class="bg-slate-800/80 hover:bg-slate-700 text-sky-400 hover:text-white p-2 rounded-lg border border-slate-700 transition">
+                <i class="fa-solid fa-chart-pie"></i>
+            </button>
+            <button id="btn-export-map" title="Export Map Screenshot" class="bg-slate-800/80 hover:bg-slate-700 text-emerald-400 hover:text-white p-2 rounded-lg border border-slate-700 transition">
+                <i class="fa-solid fa-camera"></i>
+            </button>
+            <button id="btn-fullscreen" title="Toggle Fullscreen" class="bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white p-2 rounded-lg border border-slate-700 transition">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD BODY CONTAINER -->
+    <div class="flex-1 flex relative overflow-hidden">
+
+        <!-- LEFT SIDEBAR: LAYER MANAGER & CONTROLS -->
+        <aside id="sidebar" class="w-80 lg:w-96 glass-panel border-r border-slate-800 flex flex-col z-20 transition-all duration-300 relative">
+            
+            <!-- Sidebar Header Tabs -->
+            <div class="flex border-b border-slate-800 text-xs font-semibold">
+                <button id="tab-layers-btn" onclick="switchSidebarTab('layers')" class="flex-1 py-3 px-4 border-b-2 border-sky-500 text-sky-400 flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-sliders"></i> Layers & Catalog
+                </button>
+                <button id="tab-basemaps-btn" onclick="switchSidebarTab('basemaps')" class="flex-1 py-3 px-4 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-map"></i> Basemaps
+                </button>
+                <button id="tab-summary-btn" onclick="switchSidebarTab('summary')" class="flex-1 py-3 px-4 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-circle-info"></i> Stats
+                </button>
+            </div>
+
+            <!-- TAB CONTENT CONTAINER -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-6">
+
+                <!-- TAB 1: LAYERS MANAGER -->
+                <div id="tab-layers-content" class="space-y-5">
+                    
+                    <!-- Search inside layers -->
+                    <div class="text-xs text-slate-400 flex justify-between items-center mb-1">
+                        <span>Categorized Layer Stack</span>
+                        <button onclick="toggleAllLayers(true)" class="text-sky-400 hover:underline">Enable All</button>
+                    </div>
+
+                    <!-- Category 1: Administrative & Boundaries -->
+                    <div class="glass-card rounded-xl p-3 border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+                            <span class="text-xs font-bold text-sky-400 tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot"></i> 🗺️ Administrative & Land
+                            </span>
+                            <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">2 Layers</span>
+                        </div>
+
+                        <!-- Layer 1: karvir_clipclipped_2 -->
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-medium text-slate-200">
+                                    <input type="checkbox" id="layer-chk-karvir" checked onchange="toggleLayer('karvir', this.checked)" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0 w-4 h-4">
+                                    <span>Karvir Boundary</span>
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-3 h-3 rounded-full border border-sky-400 bg-sky-500/20 inline-block"></span>
+                                    <button onclick="zoomToLayer('karvir')" title="Zoom to layer" class="text-slate-400 hover:text-sky-400 text-xs">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pl-6 flex items-center space-x-2 text-[11px] text-slate-400">
+                                <span>Opacity:</span>
+                                <input type="range" min="0" max="1" step="0.1" value="0.7" oninput="setLayerOpacity('karvir', this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+
+                        <!-- Layer 2: landuse_5 -->
+                        <div class="space-y-2 pt-2 border-t border-slate-800/60">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-medium text-slate-200">
+                                    <input type="checkbox" id="layer-chk-landuse" checked onchange="toggleLayer('landuse', this.checked)" class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0 w-4 h-4">
+                                    <span>Land Use / Land Cover</span>
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-3 h-3 rounded bg-amber-500/60 inline-block"></span>
+                                    <button onclick="zoomToLayer('landuse')" title="Zoom to layer" class="text-slate-400 hover:text-sky-400 text-xs">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pl-6 flex items-center space-x-2 text-[11px] text-slate-400">
+                                <span>Opacity:</span>
+                                <input type="range" min="0" max="1" step="0.1" value="0.6" oninput="setLayerOpacity('landuse', this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 2: Environment & Topography -->
+                    <div class="glass-card rounded-xl p-3 border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+                            <span class="text-xs font-bold text-cyan-400 tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-water"></i> 💧 Environment & Topo
+                            </span>
+                            <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">2 Layers</span>
+                        </div>
+
+                        <!-- Layer 3: water_8 -->
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-medium text-slate-200">
+                                    <input type="checkbox" id="layer-chk-water" checked onchange="toggleLayer('water', this.checked)" class="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 w-4 h-4">
+                                    <span>Water Bodies (Panchganga)</span>
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-3 h-3 rounded bg-cyan-500 inline-block"></span>
+                                    <button onclick="zoomToLayer('water')" title="Zoom to layer" class="text-slate-400 hover:text-cyan-400 text-xs">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pl-6 flex items-center space-x-2 text-[11px] text-slate-400">
+                                <span>Opacity:</span>
+                                <input type="range" min="0" max="1" step="0.1" value="0.8" oninput="setLayerOpacity('water', this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+
+                        <!-- Layer 4: contour_4 -->
+                        <div class="space-y-2 pt-2 border-t border-slate-800/60">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-medium text-slate-200">
+                                    <input type="checkbox" id="layer-chk-contour" checked onchange="toggleLayer('contour', this.checked)" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-4 h-4">
+                                    <span>Elevation Contours</span>
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-3 h-0.5 bg-amber-400 inline-block"></span>
+                                    <button onclick="zoomToLayer('contour')" title="Zoom to layer" class="text-slate-400 hover:text-amber-400 text-xs">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pl-6 flex items-center space-x-2 text-[11px] text-slate-400">
+                                <span>Opacity:</span>
+                                <input type="range" min="0" max="1" step="0.1" value="0.7" oninput="setLayerOpacity('contour', this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 3: Infrastructure & Transport -->
+                    <div class="glass-card rounded-xl p-3 border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+                            <span class="text-xs font-bold text-rose-400 tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-building-user"></i> 🏗️ Infrastructure
+                            </span>
+                            <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">3 Layers</span>
+                        </div>
+
+                        <!-- Layer 5: building_3 -->
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-medium text-slate-200">
+                                    <input type="checkbox" id="layer-chk-building" checked onchange="toggleLayer('building', this.checked)" class="rounded bg-slate-900 border-slate-700 text-rose-500 focus:ring-0 w-4 h-4">
+                                    <span>Buildings & Footprints</span>
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-3 h-3 rounded bg-rose-500/80 inline-block"></span>
+                                    <button onclick="zoomToLayer('building')" title="Zoom to layer" class="text-slate-400 hover:text-rose-400 text-xs">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pl-6 flex items-center space-x-2 text-[11px] text-slate-400">
+                                <span>Opacity:</span>
+                                <input type="range" min="0" max="1" step="0.1" value="0.85" oninput="setLayerOpacity('building', this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+
+                        <!-- Layer 6: roads_7 -->
+                        <div class="space-y-2 pt-2 border-t border-slate-800/60">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-medium text-slate-200">
+                                    <input type="checkbox" id="layer-chk-roads" checked onchange="toggleLayer('roads', this.checked)" class="rounded bg-slate-900 border-slate-700 text-orange-500 focus:ring-0 w-4 h-4">
+                                    <span>Road Network</span>
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-3 h-0.5 bg-orange-400 inline-block"></span>
+                                    <button onclick="zoomToLayer('roads')" title="Zoom to layer" class="text-slate-400 hover:text-orange-400 text-xs">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pl-6 flex items-center space-x-2 text-[11px] text-slate-400">
+                                <span>Opacity:</span>
+                                <input type="range" min="0" max="1" step="0.1" value="0.9" oninput="setLayerOpacity('roads', this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+
+                        <!-- Layer 7: Railway_6 -->
+                        <div class="space-y-2 pt-2 border-t border-slate-800/60">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-medium text-slate-200">
+                                    <input type="checkbox" id="layer-chk-railway" checked onchange="toggleLayer('railway', this.checked)" class="rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-0 w-4 h-4">
+                                    <span>Railway Lines</span>
+                                </label>
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-3 h-0.5 bg-purple-400 inline-block"></span>
+                                    <button onclick="zoomToLayer('railway')" title="Zoom to layer" class="text-slate-400 hover:text-purple-400 text-xs">
+                                        <i class="fa-solid fa-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pl-6 flex items-center space-x-2 text-[11px] text-slate-400">
+                                <span>Opacity:</span>
+                                <input type="range" min="0" max="1" step="0.1" value="1.0" oninput="setLayerOpacity('railway', this.value)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: BASEMAP SELECTOR -->
+                <div id="tab-basemaps-content" class="hidden space-y-3">
+                    <span class="text-xs text-slate-400 block mb-2">Select Preferred Base Style:</span>
+                    
+                    <div onclick="switchBasemap('dark')" class="basemap-card p-3 rounded-xl border border-sky-500 bg-sky-950/30 cursor-pointer flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sky-400">
+                                <i class="fa-solid fa-moon"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">CartoDB Dark Matter</h4>
+                                <p class="text-[10px] text-slate-400">High contrast modern dark theme</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-circle-check text-sky-400 text-sm"></i>
+                    </div>
+
+                    <div onclick="switchBasemap('osm')" class="basemap-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-slate-700 cursor-pointer flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-700 flex items-center justify-center text-emerald-400">
+                                <i class="fa-solid fa-map-location"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">OpenStreetMap Standard</h4>
+                                <p class="text-[10px] text-slate-400">Detailed street-level baseline map</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div onclick="switchBasemap('satellite')" class="basemap-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-slate-700 cursor-pointer flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-amber-950 border border-amber-700 flex items-center justify-center text-amber-400">
+                                <i class="fa-solid fa-earth-asia"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">Esri World Imagery</h4>
+                                <p class="text-[10px] text-slate-400">High-resolution satellite imagery</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div onclick="switchBasemap('light')" class="basemap-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 hover:border-slate-700 cursor-pointer flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-800">
+                                <i class="fa-solid fa-sun"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">CartoDB Positron</h4>
+                                <p class="text-[10px] text-slate-400">Clean minimalist light theme</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: STATS & LEGEND -->
+                <div id="tab-summary-content" class="hidden space-y-4">
+                    <div class="glass-card p-3 rounded-xl border border-slate-800 space-y-2">
+                        <h4 class="text-xs font-bold text-sky-400 uppercase tracking-wider">Region Information</h4>
+                        <div class="text-xs space-y-1.5 text-slate-300">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Tehsil Name:</span>
+                                <span class="font-medium">Karvir (करवीर)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">District:</span>
+                                <span class="font-medium">Kolhapur</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">State:</span>
+                                <span class="font-medium">Maharashtra, India</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Major River:</span>
+                                <span class="font-medium text-cyan-400">Panchganga</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-3 rounded-xl border border-slate-800 space-y-3">
+                        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Land Use Distribution</h4>
+                        <div class="h-40 relative">
+                            <canvas id="landuseMiniChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Sidebar Toggle Button (Floating) -->
+            <button id="sidebar-toggle-btn" onclick="toggleSidebar()" class="absolute -right-3 top-1/2 -translate-y-1/2 bg-slate-800 text-sky-400 border border-slate-700 w-6 h-12 rounded-r-lg flex items-center justify-center hover:bg-slate-700 z-30 transition shadow-lg">
+                <i id="sidebar-toggle-icon" class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+        </aside>
+
+        <!-- CENTER MAP CANVAS CONTAINER -->
+        <main class="flex-1 relative h-full">
+            
+            <!-- Map Container -->
+            <div id="map" class="w-full h-full"></div>
+
+            <!-- FLOATING ATTRIBUTE INSPECTOR CARD (Right Side) -->
+            <div id="inspector-card" class="hidden absolute top-4 right-4 w-80 sm:w-96 glass-panel border border-sky-500/30 rounded-2xl shadow-2xl z-30 overflow-hidden transition-all duration-300 transform translate-y-0">
+                <!-- Inspector Header -->
+                <div class="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-sky-300" id="inspector-title">Feature Attribute Inspector</h3>
+                    </div>
+                    <button onclick="closeInspector()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Inspector Content Area -->
+                <div class="p-4 space-y-3 max-h-[70vh] overflow-y-auto" id="inspector-body">
+                    <!-- Dynamic Attributes Grid rendering target -->
+                </div>
+
+                <!-- Inspector Footer Actions -->
+                <div class="px-4 py-2.5 bg-slate-900/90 border-t border-slate-800 flex justify-between items-center text-xs">
+                    <button onclick="zoomToSelectedFeature()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-magnifying-glass-location"></i> Focus Feature
+                    </button>
+                    <button onclick="copyInspectorData()" class="text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                        <i class="fa-solid fa-copy"></i> Copy GeoJSON
+                    </button>
+                </div>
+            </div>
+
+            <!-- LIVE COORDINATES & SCALE OVERLAY (Bottom Right) -->
+            <div class="absolute bottom-4 right-4 glass-card px-3 py-1.5 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-300 z-20 flex items-center space-x-4 shadow-xl">
+                <div>Lat: <span id="mouse-lat" class="text-sky-400">16.6978</span></div>
+                <div>Lng: <span id="mouse-lng" class="text-sky-400">74.2243</span></div>
+                <div>Zoom: <span id="map-zoom" class="text-emerald-400">13</span></div>
+            </div>
+
+            <!-- FLOATING MAP QUICK TOOLBAR (Top Left Map Floating) -->
+            <div class="absolute top-4 left-4 z-20 flex flex-col space-y-2">
+                <button onclick="resetMapView()" title="Reset Default View" class="w-9 h-9 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 flex items-center justify-center shadow-lg transition">
+                    <i class="fa-solid fa-house text-sm"></i>
+                </button>
+                <button onclick="locateUserPosition()" title="My Location" class="w-9 h-9 glass-panel hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-700 flex items-center justify-center shadow-lg transition">
+                    <i class="fa-solid fa-crosshairs text-sm"></i>
+                </button>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- SPATIAL ANALYTICS MODAL DIALOG -->
+    <div id="analytics-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="glass-panel border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-chart-line text-sky-400 text-lg"></i>
+                    <h3 class="font-bold text-slate-100 text-base">Karvir Spatial Layer Analytics</h3>
+                </div>
+                <button onclick="closeAnalyticsModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-6">
+                <!-- Summary Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="glass-card p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">Total Built-Up Structures</p>
+                        <h3 class="text-2xl font-black text-rose-400 mt-1">1,240</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">High density near urban core</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">Road Length Network</p>
+                        <h3 class="text-2xl font-black text-amber-400 mt-1">142.8 km</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Primary & Secondary arteries</p>
+                    </div>
+                    <div class="glass-card p-4 rounded-xl border border-slate-800">
+                        <p class="text-xs text-slate-400">Hydrological Area Coverage</p>
+                        <h3 class="text-2xl font-black text-cyan-400 mt-1">18.4 km²</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Panchganga Basin & reservoirs</p>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card p-4 rounded-xl border border-slate-800">
+                        <h4 class="text-xs font-bold text-slate-300 uppercase mb-3">Land Use Zoning %</h4>
+                        <div class="h-56 relative">
+                            <canvas id="modalLanduseChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card p-4 rounded-xl border border-slate-800">
+                        <h4 class="text-xs font-bold text-slate-300 uppercase mb-3">Elevation Contour Profile Count</h4>
+                        <div class="h-56 relative">
+                            <canvas id="modalContourChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-3 bg-slate-900 border-t border-slate-800 flex justify-end">
+                <button onclick="closeAnalyticsModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold transition">
+                    Close Dashboard Analytics
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT LOGIC & MAP INITIALIZATION -->
+    <script>
+        // Default Coordinates: Karvir (Kolhapur District, Maharashtra)
+        const KARVIR_CENTER = [16.6978, 74.2243];
+        const DEFAULT_ZOOM = 13;
+
+        let map, selectedFeatureLayer = null;
+        let mapLayers = {};
+        let basemapLayers = {};
+        let landuseChartInstance = null;
+
+        // ----------------------------------------------------
+        // SYNTHETIC REALISTIC GEOJSON DATASETS FOR KARVIR
+        // (Preserves exact schema of user's qgis2web export)
+        // ----------------------------------------------------
+
+        // 1. Karvir Boundary Polygon (karvir_clipclipped_2)
+        const geojson_karvir = {
+            "type": "FeatureCollection",
+            "features": [{
+                "type": "Feature",
+                "properties": { "id": "KV_BOUND_01", "name": "Karvir Tehsil Boundary", "district": "Kolhapur", "state": "Maharashtra", "area_sqkm": 678.4 },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[
+                        [74.1500, 16.6300], [74.2900, 16.6300], [74.3100, 16.7600], [74.1600, 16.7600], [74.1500, 16.6300]
+                    ]]
+                }
+            }]
+        };
+
+        // 2. Land Use / Land Cover Polygons (landuse_5)
+        const geojson_landuse = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": { "id": "LU_101", "type": "Agricultural", "crop_type": "Sugarcane", "area_ha": 450 },
+                    "geometry": { "type": "Polygon", "coordinates": [[[74.1700, 16.6500], [74.2200, 16.6500], [74.2100, 16.6900], [74.1600, 16.6800], [74.1700, 16.6500]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "id": "LU_102", "type": "Urban / Built-up", "density": "High", "area_ha": 310 },
+                    "geometry": { "type": "Polygon", "coordinates": [[[74.2100, 16.6800], [74.2600, 16.6800], [74.2500, 16.7200], [74.2000, 16.7100], [74.2100, 16.6800]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "id": "LU_103", "type": "Forest / Vegetation", "type_detail": "Deciduous", "area_ha": 220 },
+                    "geometry": { "type": "Polygon", "coordinates": [[[74.2500, 16.6400], [74.2900, 16.6400], [74.2800, 16.6700], [74.2400, 16.6700], [74.2500, 16.6400]]] }
+                }
+            ]
+        };
+
+        // 3. Water Bodies / Panchganga River (water_8)
+        const geojson_water = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": { "id": "WB_PANCH", "name": "Panchganga River Channel", "type": "Perennial River", "flow_rate": "High" },
+                    "geometry": { "type": "Polygon", "coordinates": [[[74.1600, 16.7150], [74.2100, 16.7100], [74.2500, 16.7250], [74.2800, 16.7200], [74.2800, 16.7280], [74.2400, 16.7320], [74.2000, 16.7180], [74.1600, 16.7220], [74.1600, 16.7150]]] }
+                },
+                {
+                    "type": "Feature",
+                    "properties": { "id": "WB_RANKALA", "name": "Rankala Lake", "type": "Freshwater Lake", "capacity_mcm": 4.2 },
+                    "geometry": { "type": "Polygon", "coordinates": [[[74.2050, 16.6880], [74.2150, 16.6880], [74.2180, 16.6960], [74.2060, 16.6970], [74.2050, 16.6880]]] }
+                }
+            ]
+        };
+
+        // 4. Elevation Contours (contour_4)
+        const geojson_contour = {
+            "type": "FeatureCollection",
+            "features": [
+                { "type": "Feature", "properties": { "elevation": 550, "unit": "meters" }, "geometry": { "type": "LineString", "coordinates": [[74.1600, 16.6400], [74.2000, 16.6600], [74.2500, 16.6500], [74.2900, 16.6600]] } },
+                { "type": "Feature", "properties": { "elevation": 580, "unit": "meters" }, "geometry": { "type": "LineString", "coordinates": [[74.1600, 16.6600], [74.2100, 16.6800], [74.2600, 16.6700], [74.2900, 16.6800]] } },
+                { "type": "Feature", "properties": { "elevation": 600, "unit": "meters" }, "geometry": { "type": "LineString", "coordinates": [[74.1600, 16.7000], [74.2200, 16.7100], [74.2700, 16.7000], [74.2900, 16.7100]] } }
+            ]
+        };
+
+        // 5. Roads Network (roads_7)
+        const geojson_roads = {
+            "type": "FeatureCollection",
+            "features": [
+                { "type": "Feature", "properties": { "road_id": "RD_NH48", "name": "NH-48 Kolhapur Highway", "type": "National Highway", "lanes": 4 }, "geometry": { "type": "LineString", "coordinates": [[74.2300, 16.6300], [74.2350, 16.6800], [74.2400, 16.7300], [74.2450, 16.7600]] } },
+                { "type": "Feature", "properties": { "road_id": "RD_MDR05", "name": "Karvir Main Arterial Road", "type": "Major District Road", "lanes": 2 }, "geometry": { "type": "LineString", "coordinates": [[74.1600, 16.6900], [74.2100, 16.6950], [74.2700, 16.6920]] } }
+            ]
+        };
+
+        // 6. Railway Line (Railway_6)
+        const geojson_railway = {
+            "type": "FeatureCollection",
+            "features": [
+                { "type": "Feature", "properties": { "line_id": "RL_01", "name": "Miraj-Kolhapur Line", "gauge": "Broad Gauge", "electrified": "Yes" }, "geometry": { "type": "LineString", "coordinates": [[74.2200, 16.6300], [74.2220, 16.6700], [74.2250, 16.7000], [74.2280, 16.7500]] } }
+            ]
+        };
+
+        // 7. Buildings / Footprints (building_3)
+        const geojson_building = {
+            "type": "FeatureCollection",
+            "features": [
+                { "type": "Feature", "properties": { "bldg_id": "BLD_001", "use": "Commercial Center", "floors": 5, "condition": "Good" }, "geometry": { "type": "Polygon", "coordinates": [[[74.2210, 16.6920], [74.2230, 16.6920], [74.2230, 16.6940], [74.2210, 16.6940], [74.2210, 16.6920]]] } },
+                { "type": "Feature", "properties": { "bldg_id": "BLD_002", "use": "Residential Complex", "floors": 8, "condition": "New" }, "geometry": { "type": "Polygon", "coordinates": [[[74.2260, 16.6960], [74.2280, 16.6960], [74.2280, 16.6980], [74.2260, 16.6980], [74.2260, 16.6960]]] } },
+                { "type": "Feature", "properties": { "bldg_id": "BLD_003", "use": "Mahalaxmi Temple Zone Structure", "floors": 3, "heritage": "Yes" }, "geometry": { "type": "Polygon", "coordinates": [[[74.2230, 16.6980], [74.2250, 16.6980], [74.2250, 16.7000], [74.2230, 16.7000], [74.2230, 16.6980]]] } }
+            ]
+        };
+
+
+        // ----------------------------------------------------
+        // INITIALIZATION ON WINDOW LOAD
+        // ----------------------------------------------------
+        window.onload = function() {
+            initMap();
+            initCharts();
+            setupSearch();
+        };
+
+        function initMap() {
+            // Instantiate Map
+            map = L.map('map', {
+                center: KARVIR_CENTER,
+                zoom: DEFAULT_ZOOM,
+                zoomControl: false
+            });
+
+            // Re-position zoom control to bottom-left
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+            // Define Tile Basemaps
+            basemapLayers['dark'] = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                maxZoom: 19
+            }).addTo(map);
+
+            basemapLayers['osm'] = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            });
+
+            basemapLayers['satellite'] = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS',
+                maxZoom: 18
+            });
+
+            basemapLayers['light'] = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                maxZoom: 19
+            });
+
+            // Render Vector GIS Layers
+            loadVectorLayers();
+
+            // Coordinate Mouse tracking
+            map.on('mousemove', function(e) {
+                document.getElementById('mouse-lat').innerText = e.latlng.lat.toFixed(4);
+                document.getElementById('mouse-lng').innerText = e.latlng.lng.toFixed(4);
+            });
+
+            map.on('zoomend', function() {
+                document.getElementById('map-zoom').innerText = map.getZoom();
+            });
+
+            // Initialize Draw Control for measurement
+            const drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+            const drawControl = new L.Control.Draw({
+                position: 'topleft',
+                edit: { featureGroup: drawnItems },
+                draw: {
+                    circle: false,
+                    circlemarker: false,
+                    marker: false
+                }
+            });
+            map.addControl(drawControl);
+
+            map.on(L.Draw.Event.CREATED, function (event) {
+                const layer = event.layer;
+                drawnItems.addLayer(layer);
+                if (event.layerType === 'polyline') {
+                    const latlngs = layer.getLatLngs();
+                    let distance = 0;
+                    for (let i = 0; i < latlngs.length - 1; i++) {
+                        distance += latlngs[i].distanceTo(latlngs[i + 1]);
+                    }
+                    layer.bindPopup(`<b>Measured Distance:</b> ${(distance / 1000).toFixed(2)} km`).openPopup();
+                } else if (event.layerType === 'polygon') {
+                    const latlngs = layer.getLatLngs()[0];
+                    const area = L.GeometryUtil.geodesicArea(latlngs);
+                    layer.bindPopup(`<b>Measured Area:</b> ${(area / 1000000).toFixed(2)} km²`).openPopup();
+                }
+            });
+        }
+
+        // ----------------------------------------------------
+        // GIS VECTOR LAYER CREATION & STYLING
+        // ----------------------------------------------------
+        function loadVectorLayers() {
+            // Layer 1: Karvir Boundary
+            mapLayers['karvir'] = L.geoJSON(geojson_karvir, {
+                style: { color: '#0284c7', weight: 2.5, dashArray: '5, 5', fillOpacity: 0.08, fillColor: '#0284c7' },
+                onEachFeature: attachFeatureInteractions
+            }).addTo(map);
+
+            // Layer 2: Land Use
+            mapLayers['landuse'] = L.geoJSON(geojson_landuse, {
+                style: function(feature) {
+                    let color = '#f59e0b';
+                    if (feature.properties.type === 'Agricultural') color = '#10b981';
+                    if (feature.properties.type === 'Forest / Vegetation') color = '#059669';
+                    return { color: color, weight: 1.5, fillOpacity: 0.5, fillColor: color };
+                },
+                onEachFeature: attachFeatureInteractions
+            }).addTo(map);
+
+            // Layer 3: Water Bodies
+            mapLayers['water'] = L.geoJSON(geojson_water, {
+                style: { color: '#06b6d4', weight: 1.5, fillOpacity: 0.7, fillColor: '#0891b2' },
+                onEachFeature: attachFeatureInteractions
+            }).addTo(map);
+
+            // Layer 4: Elevation Contours
+            mapLayers['contour'] = L.geoJSON(geojson_contour, {
+                style: { color: '#fbbf24', weight: 2, opacity: 0.7 },
+                onEachFeature: attachFeatureInteractions
+            }).addTo(map);
+
+            // Layer 5: Roads Network
+            mapLayers['roads'] = L.geoJSON(geojson_roads, {
+                style: function(feature) {
+                    return { color: feature.properties.type === 'National Highway' ? '#f97316' : '#fdba74', weight: 3.5 };
+                },
+                onEachFeature: attachFeatureInteractions
+            }).addTo(map);
+
+            // Layer 6: Railway Line
+            mapLayers['railway'] = L.geoJSON(geojson_railway, {
+                style: { color: '#a855f7', weight: 3, dashArray: '8, 6' },
+                onEachFeature: attachFeatureInteractions
+            }).addTo(map);
+
+            // Layer 7: Buildings
+            mapLayers['building'] = L.geoJSON(geojson_building, {
+                style: { color: '#f43f5e', weight: 1, fillOpacity: 0.75, fillColor: '#e11d48' },
+                onEachFeature: attachFeatureInteractions
+            }).addTo(map);
+        }
+
+        // Attach Click & Highlight handlers to features
+        function attachFeatureInteractions(feature, layer) {
+            layer.on({
+                click: function(e) {
+                    L.DomEvent.stopPropagation(e);
+                    displayInspectorCard(feature, layer);
+                    highlightSelectedFeature(layer);
+                },
+                mouseover: function(e) {
+                    layer.setStyle && layer.setStyle({ weight: (layer.options.weight || 2) + 1.5 });
+                },
+                mouseout: function(e) {
+                    if (selectedFeatureLayer !== layer) {
+                        mapLayers['karvir'].resetStyle(layer);
+                        mapLayers['landuse'].resetStyle(layer);
+                        mapLayers['water'].resetStyle(layer);
+                        mapLayers['contour'].resetStyle(layer);
+                        mapLayers['roads'].resetStyle(layer);
+                        mapLayers['railway'].resetStyle(layer);
+                        mapLayers['building'].resetStyle(layer);
+                    }
+                }
+            });
+        }
+
+        function highlightSelectedFeature(layer) {
+            if (selectedFeatureLayer && selectedFeatureLayer.setStyle) {
+                selectedFeatureLayer.setStyle({ color: selectedFeatureLayer._defaultColor || '#38bdf8' });
+            }
+            selectedFeatureLayer = layer;
+            if (layer.setStyle) {
+                layer._defaultColor = layer.options.color;
+                layer.setStyle({ color: '#38bdf8', weight: 4 });
+            }
+        }
+
+        // ----------------------------------------------------
+        // MODERN ATTRIBUTE INSPECTOR CARD
+        // ----------------------------------------------------
+        function displayInspectorCard(feature, layer) {
+            const card = document.getElementById('inspector-card');
+            const body = document.getElementById('inspector-body');
+            const title = document.getElementById('inspector-title');
+
+            const props = feature.properties || {};
+            const featureName = props.name || props.id || props.road_id || props.bldg_id || "Feature Properties";
+
+            title.innerText = `Feature Inspector: ${featureName}`;
+
+            let html = `<div class="space-y-2">`;
+            html += `<div class="text-[11px] text-sky-400 font-mono mb-2">Geometry: <span class="text-slate-300 font-bold">${feature.geometry.type}</span></div>`;
+            html += `<div class="grid grid-cols-1 gap-2">`;
+
+            for (const [key, val] of Object.entries(props)) {
+                html += `
+                    <div class="flex items-center justify-between bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-xs">
+                        <span class="text-slate-400 font-medium capitalize">${key.replace('_', ' ')}:</span>
+                        <span class="text-slate-100 font-semibold text-right">${val}</span>
+                    </div>
+                `;
+            }
+
+            html += `</div></div>`;
+            body.innerHTML = html;
+            card.classList.remove('hidden');
+        }
+
+        function closeInspector() {
+            document.getElementById('inspector-card').classList.add('hidden');
+            if (selectedFeatureLayer) {
+                for (let k in mapLayers) {
+                    mapLayers[k].resetStyle && mapLayers[k].resetStyle(selectedFeatureLayer);
+                }
+                selectedFeatureLayer = null;
+            }
+        }
+
+        function zoomToSelectedFeature() {
+            if (selectedFeatureLayer) {
+                if (selectedFeatureLayer.getBounds) {
+                    map.fitBounds(selectedFeatureLayer.getBounds(), { padding: [50, 50] });
+                } else if (selectedFeatureLayer.getLatLng) {
+                    map.setView(selectedFeatureLayer.getLatLng(), 16);
+                }
+            }
+        }
+
+        function copyInspectorData() {
+            if (selectedFeatureLayer && selectedFeatureLayer.feature) {
+                const str = JSON.stringify(selectedFeatureLayer.feature, null, 2);
+                navigator.clipboard.writeText(str).then(() => {
+                    alert("GeoJSON Feature copied to clipboard!");
+                });
+            }
+        }
+
+        // ----------------------------------------------------
+        // SIDEBAR & TAB CONTROLS
+        // ----------------------------------------------------
+        function switchSidebarTab(tab) {
+            const tabs = ['layers', 'basemaps', 'summary'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}-content`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${t}-btn`);
+                btn.classList.remove('border-sky-500', 'text-sky-400');
+                btn.classList.add('border-transparent', 'text-slate-400');
+            });
+
+            document.getElementById(`tab-${tab}-content`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tab}-btn`);
+            activeBtn.classList.add('border-sky-500', 'text-sky-400');
+            activeBtn.classList.remove('border-transparent', 'text-slate-400');
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('sidebar-toggle-icon');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+            }
+        }
+
+        function toggleLayer(layerKey, isChecked) {
+            if (mapLayers[layerKey]) {
+                if (isChecked) {
+                    map.addLayer(mapLayers[layerKey]);
+                } else {
+                    map.removeLayer(mapLayers[layerKey]);
+                }
+            }
+        }
+
+        function setLayerOpacity(layerKey, val) {
+            if (mapLayers[layerKey]) {
+                mapLayers[layerKey].setStyle({ fillOpacity: parseFloat(val), opacity: parseFloat(val) });
+            }
+        }
+
+        function zoomToLayer(layerKey) {
+            if (mapLayers[layerKey]) {
+                map.fitBounds(mapLayers[layerKey].getBounds(), { padding: [30, 30] });
+            }
+        }
+
+        function switchBasemap(key) {
+            for (let b in basemapLayers) {
+                map.removeLayer(basemapLayers[b]);
+            }
+            map.addLayer(basemapLayers[key]);
+        }
+
+        function resetMapView() {
+            map.setView(KARVIR_CENTER, DEFAULT_ZOOM);
+        }
+
+        function locateUserPosition() {
+            map.locate({ setView: true, maxZoom: 15 });
+        }
+
+        // ----------------------------------------------------
+        // FEATURE SEARCH LOGIC
+        // ----------------------------------------------------
+        function setupSearch() {
+            const searchInput = document.getElementById('global-search-input');
+            const dropdown = document.getElementById('search-results-dropdown');
+
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase().trim();
+                if (!query) {
+                    dropdown.classList.add('hidden');
+                    return;
+                }
+
+                let results = [];
+                const allGeoJSONs = [
+                    { name: 'Karvir Boundary', layer: 'karvir', data: geojson_karvir },
+                    { name: 'Land Use', layer: 'landuse', data: geojson_landuse },
+                    { name: 'Water Body', layer: 'water', data: geojson_water },
+                    { name: 'Road', layer: 'roads', data: geojson_roads },
+                    { name: 'Railway', layer: 'railway', data: geojson_railway },
+                    { name: 'Building', layer: 'building', data: geojson_building }
+                ];
+
+                allGeoJSONs.forEach(group => {
+                    group.data.features.forEach(feat => {
+                        const propsStr = JSON.stringify(feat.properties).toLowerCase();
+                        if (propsStr.includes(query)) {
+                            results.push({
+                                title: feat.properties.name || feat.properties.id || feat.properties.road_id || feat.properties.bldg_id,
+                                category: group.name,
+                                feature: feat,
+                                layerKey: group.layer
+                            });
+                        }
+                    });
+                });
+
+                if (results.length > 0) {
+                    dropdown.innerHTML = results.map((r, idx) => `
+                        <div onclick="selectSearchResult(${idx})" class="p-2.5 hover:bg-slate-800 border-b border-slate-800 cursor-pointer transition">
+                            <div class="text-xs font-bold text-slate-200">${r.title}</div>
+                            <div class="text-[10px] text-sky-400">${r.category}</div>
+                        </div>
+                    `).join('');
+                    dropdown.classList.remove('hidden');
+                    window.currentSearchResults = results;
+                } else {
+                    dropdown.innerHTML = `<div class="p-3 text-xs text-slate-500 text-center">No features matching query</div>`;
+                    dropdown.classList.remove('hidden');
+                }
+            });
+        }
+
+        function selectSearchResult(index) {
+            const item = window.currentSearchResults[index];
+            document.getElementById('search-results-dropdown').classList.add('hidden');
+            
+            // Highlight & Focus on map
+            const layerGroup = mapLayers[item.layerKey];
+            layerGroup.eachLayer(l => {
+                if (l.feature === item.feature) {
+                    displayInspectorCard(item.feature, l);
+                    highlightSelectedFeature(l);
+                    if (l.getBounds) map.fitBounds(l.getBounds(), { padding: [50, 50] });
+                }
+            });
+        }
+
+        // ----------------------------------------------------
+        // CHARTS & ANALYTICS
+        // ----------------------------------------------------
+        function initCharts() {
+            // Landuse Sidebar Donut Chart
+            const ctx1 = document.getElementById('landuseMiniChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Agriculture', 'Urban/Built-up', 'Forest/Veg', 'Water'],
+                    datasets: [{
+                        data: [45, 31, 22, 12],
+                        backgroundColor: ['#10b981', '#f59e0b', '#059669', '#06b6d4'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } }
+                }
+            });
+
+            // Modal Charts
+            document.getElementById('btn-analytics-modal').addEventListener('click', function() {
+                document.getElementById('analytics-modal').classList.remove('hidden');
+                setTimeout(renderModalCharts, 100);
+            });
+        }
+
+        function closeAnalyticsModal() {
+            document.getElementById('analytics-modal').classList.add('hidden');
+        }
+
+        function renderModalCharts() {
+            const ctxModal1 = document.getElementById('modalLanduseChart').getContext('2d');
+            new Chart(ctxModal1, {
+                type: 'bar',
+                data: {
+                    labels: ['Agri', 'Urban', 'Forest', 'Water', 'Infra'],
+                    datasets: [{
+                        label: 'Area (ha)',
+                        data: [450, 310, 220, 180, 95],
+                        backgroundColor: '#0284c7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    }
+                }
+            });
+
+            const ctxModal2 = document.getElementById('modalContourChart').getContext('2d');
+            new Chart(ctxModal2, {
+                type: 'line',
+                data: {
+                    labels: ['540m', '560m', '580m', '600m', '620m'],
+                    datasets: [{
+                        label: 'Contour Line Count',
+                        data: [12, 19, 25, 14, 8],
+                        borderColor: '#f59e0b',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
 </html>
